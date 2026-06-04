@@ -1,0 +1,986 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Annuaire — AAESM GL</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy: #0f1e3c;
+    --gold: #c9a84c;
+    --gold-light: #e8c96a;
+    --cream: #f8f5ee;
+    --white: #ffffff;
+    --slate: #4a5568;
+    --slate-light: #718096;
+    --border: #e2d9c8;
+    --danger: #b83232;
+    --shadow: 0 4px 24px rgba(15,30,60,0.10);
+    --radius: 12px;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'DM Sans', sans-serif; background: var(--cream); color: var(--navy); min-height: 100vh; }
+
+  /* HEADER */
+  header {
+    background: var(--navy); color: var(--white);
+    padding: 0 1.5rem; display: flex; align-items: center; gap: 1.2rem;
+    height: 72px; position: sticky; top: 0; z-index: 100;
+    box-shadow: 0 2px 20px rgba(0,0,0,0.3);
+  }
+  #logo-container {
+    width: 48px; height: 48px; border-radius: 50%;
+    border: 2px solid var(--gold); display: flex; align-items: center; justify-content: center;
+    background: var(--white); flex-shrink: 0; cursor: pointer; position: relative; overflow: hidden;
+  }
+  #logo-container img { width: 100%; height: 100%; object-fit: contain; }
+  #logo-placeholder { font-size: 1.2rem; font-weight: 900; color: var(--navy); font-family: 'Playfair Display', serif; }
+  #logo-input { display: none; }
+  #logo-hint {
+    position: absolute; bottom: -2px; right: -2px;
+    background: var(--gold); border-radius: 50%; width: 16px; height: 16px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.6rem; color: var(--navy); font-weight: 700;
+  }
+  .header-text h1 { font-family: 'Playfair Display', serif; font-size: 1.1rem; font-weight: 700; line-height: 1.2; }
+  .header-text p { font-size: 0.68rem; color: var(--gold-light); font-weight: 300; letter-spacing: 0.06em; text-transform: uppercase; margin-top: 0.1rem; }
+  .header-stats { margin-left: auto; display: flex; gap: 1.5rem; align-items: center; }
+  .stat-pill { text-align: center; }
+  .stat-pill span:first-child { display: block; font-size: 1.3rem; font-weight: 700; font-family: 'Playfair Display', serif; color: var(--gold); }
+  .stat-pill span:last-child { font-size: 0.68rem; color: rgba(255,255,255,0.6); text-transform: uppercase; letter-spacing: 0.05em; }
+
+  /* SYNC INDICATOR */
+  #sync-status {
+    display: flex; align-items: center; gap: 0.4rem;
+    font-size: 0.72rem; color: rgba(255,255,255,0.6);
+    white-space: nowrap;
+  }
+  #sync-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: #6b7280; flex-shrink: 0; transition: background 0.3s;
+  }
+  #sync-dot.ok { background: #34d399; }
+  #sync-dot.loading { background: var(--gold); animation: pulse 1s infinite; }
+  #sync-dot.error { background: #f87171; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+  /* LAYOUT */
+  .container { max-width: 100%; padding: 1.5rem; }
+
+  /* TOOLBAR */
+  .toolbar { display: flex; gap: 0.7rem; margin-bottom: 1.2rem; flex-wrap: wrap; align-items: center; }
+  .search-box { flex: 1; min-width: 180px; position: relative; }
+  .search-box input {
+    width: 100%; padding: 0.65rem 1rem 0.65rem 2.5rem;
+    border: 2px solid var(--border); border-radius: 8px;
+    font-family: 'DM Sans', sans-serif; font-size: 0.88rem;
+    background: var(--white); color: var(--navy); transition: border-color 0.2s;
+  }
+  .search-box input:focus { outline: none; border-color: var(--gold); }
+  .search-box svg { position: absolute; left: 0.8rem; top: 50%; transform: translateY(-50%); color: var(--slate-light); pointer-events: none; }
+  select {
+    padding: 0.65rem 0.9rem; border: 2px solid var(--border); border-radius: 8px;
+    font-family: 'DM Sans', sans-serif; font-size: 0.85rem;
+    background: var(--white); color: var(--navy); cursor: pointer; transition: border-color 0.2s;
+  }
+  select:focus { outline: none; border-color: var(--gold); }
+  .btn {
+    padding: 0.65rem 1.1rem; border-radius: 8px; border: none;
+    font-family: 'DM Sans', sans-serif; font-size: 0.85rem; font-weight: 600;
+    cursor: pointer; display: flex; align-items: center; gap: 0.4rem;
+    transition: all 0.2s; white-space: nowrap;
+  }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none !important; }
+  .btn-primary { background: var(--gold); color: var(--navy); }
+  .btn-primary:hover:not(:disabled) { background: var(--gold-light); transform: translateY(-1px); }
+  .btn-secondary { background: var(--white); color: var(--navy); border: 2px solid var(--border); }
+  .btn-secondary:hover:not(:disabled) { border-color: var(--gold); }
+  .btn-icon { background: transparent; border: none; padding: 0.35rem; border-radius: 6px; cursor: pointer; display: flex; align-items: center; }
+  .btn-icon.edit { color: var(--slate); }
+  .btn-icon.edit:hover { background: #eef2f7; color: var(--navy); }
+  .btn-icon.del { color: var(--danger); }
+  .btn-icon.del:hover { background: #fdecea; }
+
+  /* PROMO BADGES */
+  .promo-badges-container {
+    background: var(--white); border-radius: var(--radius);
+    box-shadow: var(--shadow); border: 1px solid var(--border);
+    padding: 0.9rem 1.1rem; margin-bottom: 1.2rem;
+  }
+  .promo-badges-title { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--slate-light); margin-bottom: 0.5rem; }
+  .promo-badge {
+    display: inline-block; background: var(--navy); color: var(--gold);
+    padding: 0.15rem 0.55rem; border-radius: 20px; font-size: 0.76rem; font-weight: 700;
+    font-family: 'Playfair Display', serif; margin: 0.15rem; cursor: pointer;
+    border: 1px solid transparent; transition: all 0.15s;
+  }
+  .promo-badge:hover { border-color: var(--gold); }
+  .promo-badge.active { background: var(--gold); color: var(--navy); }
+
+  /* BADGES STATUT */
+  .badge-actif { display:inline-block; background:#d1fae5; color:#065f46; padding:0.15rem 0.5rem; border-radius:20px; font-size:0.74rem; font-weight:600; }
+  .badge-retraite { display:inline-block; background:#e0e7ff; color:#3730a3; padding:0.15rem 0.5rem; border-radius:20px; font-size:0.74rem; font-weight:600; }
+
+  /* TABLE DESKTOP */
+  .table-wrapper {
+    background: var(--white); border-radius: var(--radius);
+    box-shadow: var(--shadow); border: 1px solid var(--border); overflow-x: auto;
+  }
+  table { width: 100%; border-collapse: collapse; min-width: 860px; }
+  thead { background: var(--navy); color: var(--white); }
+  th {
+    padding: 0.85rem 0.9rem; text-align: left; font-size: 0.75rem; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.07em; white-space: nowrap;
+    cursor: pointer; user-select: none; transition: background 0.15s;
+  }
+  th:hover { background: rgba(201,168,76,0.2); }
+  th .sort-icon { opacity: 0.4; margin-left: 3px; }
+  th.sorted .sort-icon { opacity: 1; color: var(--gold); }
+  tbody tr { border-bottom: 1px solid var(--border); transition: background 0.15s; animation: rowIn 0.25s ease both; }
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:hover { background: #faf8f3; }
+  @keyframes rowIn { from { opacity:0; transform:translateY(3px); } to { opacity:1; transform:none; } }
+  td { padding: 0.75rem 0.9rem; font-size: 0.85rem; color: var(--slate); vertical-align: middle; }
+  td.name-cell { font-weight: 600; color: var(--navy); }
+  td.promo-cell { font-family: 'Playfair Display', serif; font-weight: 700; color: var(--gold); font-size: 0.95rem; }
+  .empty-state { text-align: center; padding: 3rem 2rem; color: var(--slate-light); }
+  .empty-state svg { opacity: 0.3; margin-bottom: 0.8rem; display: block; margin-left: auto; margin-right: auto; }
+
+  /* CARDS MOBILE */
+  .cards-list { display: none; flex-direction: column; gap: 0.8rem; }
+  .member-card {
+    background: var(--white); border-radius: var(--radius);
+    border: 1px solid var(--border); box-shadow: var(--shadow);
+    padding: 1rem 1.1rem; animation: rowIn 0.25s ease both;
+  }
+  .card-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 0.6rem; }
+  .card-name { font-weight: 700; font-size: 1rem; color: var(--navy); line-height: 1.2; }
+  .card-promo { font-family: 'Playfair Display', serif; font-weight: 700; color: var(--gold); font-size: 0.88rem; margin-top: 0.15rem; }
+  .card-actions { display: flex; gap: 0.2rem; flex-shrink: 0; margin-left: 0.5rem; }
+  .card-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem 1rem; font-size: 0.82rem; }
+  .card-field .lbl { font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--slate-light); display: block; margin-bottom: 0.1rem; }
+  .card-field a { color: var(--gold); text-decoration: none; word-break: break-all; }
+  .card-field.full { grid-column: 1 / -1; }
+
+  /* LOADING OVERLAY */
+  #loading-screen {
+    position: fixed; inset: 0; background: var(--navy);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    z-index: 1000; gap: 1.2rem; transition: opacity 0.4s;
+  }
+  #loading-screen.hidden { opacity: 0; pointer-events: none; }
+  .loading-logo { font-family: 'Playfair Display', serif; font-size: 3rem; font-weight: 900; color: var(--gold); }
+  .loading-text { color: rgba(255,255,255,0.7); font-size: 0.9rem; }
+  .spinner {
+    width: 36px; height: 36px; border: 3px solid rgba(201,168,76,0.2);
+    border-top-color: var(--gold); border-radius: 50%; animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* PAGINATION */
+  .pagination { display: flex; align-items: center; justify-content: space-between; margin-top: 1rem; flex-wrap: wrap; gap: 0.6rem; }
+  .page-info { font-size: 0.82rem; color: var(--slate-light); }
+  .page-buttons { display: flex; gap: 0.3rem; flex-wrap: wrap; }
+  .page-btn {
+    width: 32px; height: 32px; border-radius: 7px; border: 2px solid var(--border);
+    background: var(--white); font-family: 'DM Sans', sans-serif; font-size: 0.82rem;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s; color: var(--navy);
+  }
+  .page-btn:hover:not(:disabled) { border-color: var(--gold); }
+  .page-btn.active { background: var(--navy); color: var(--white); border-color: var(--navy); }
+  .page-btn:disabled { opacity: 0.35; cursor: default; }
+
+  /* MODAL */
+  .overlay { position: fixed; inset: 0; background: rgba(15,30,60,0.55); display: flex; align-items: center; justify-content: center; z-index: 200; padding: 1rem; animation: fadeIn 0.2s ease; }
+  .overlay.hidden { display: none; }
+  @keyframes fadeIn { from{opacity:0} to{opacity:1} }
+  .modal {
+    background: var(--white); border-radius: 16px; width: 100%; max-width: 540px;
+    box-shadow: 0 20px 60px rgba(15,30,60,0.25); animation: slideUp 0.25s ease;
+    overflow: hidden; max-height: 92vh; display: flex; flex-direction: column;
+  }
+  @keyframes slideUp { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:none} }
+  .modal-header { background: var(--navy); color: var(--white); padding: 1.1rem 1.4rem; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+  .modal-header h2 { font-family: 'Playfair Display', serif; font-size: 1.1rem; }
+  .close-btn { background: none; border: none; color: rgba(255,255,255,0.7); cursor: pointer; font-size: 1.5rem; line-height: 1; padding: 0; transition: color 0.15s; }
+  .close-btn:hover { color: var(--white); }
+  .modal-body { padding: 1.2rem; overflow-y: auto; }
+  .modal-footer { padding: 0.9rem 1.2rem 1.2rem; display: flex; gap: 0.7rem; justify-content: flex-end; flex-shrink: 0; border-top: 1px solid var(--border); }
+
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.85rem; }
+  .form-group { display: flex; flex-direction: column; gap: 0.3rem; }
+  .form-group.full { grid-column: 1 / -1; }
+  label { font-size: 0.74rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--slate); }
+  input[type="text"], input[type="email"], input[type="tel"], input[type="number"], textarea, .form-group select {
+    padding: 0.6rem 0.85rem; border: 2px solid var(--border); border-radius: 8px;
+    font-family: 'DM Sans', sans-serif; font-size: 0.88rem; color: var(--navy);
+    transition: border-color 0.2s, box-shadow 0.2s; background: var(--cream); width: 100%;
+  }
+  input:focus, textarea:focus, .form-group select:focus { outline: none; border-color: var(--gold); box-shadow: 0 0 0 3px rgba(201,168,76,0.15); background: var(--white); }
+  textarea { resize: vertical; min-height: 65px; }
+
+  /* IMPORT */
+  #import-area {
+    border: 2px dashed var(--border); border-radius: 10px; padding: 1.8rem;
+    text-align: center; cursor: pointer; transition: all 0.2s; background: var(--cream);
+  }
+  #import-area:hover, #import-area.drag-over { border-color: var(--gold); background: #fdf8ec; }
+  #import-area p { color: var(--slate-light); font-size: 0.86rem; }
+  #import-input { display: none; }
+
+  /* TOAST */
+  #toast {
+    position: fixed; bottom: 1.5rem; right: 1.5rem;
+    background: var(--navy); color: var(--white); padding: 0.75rem 1.2rem;
+    border-radius: 10px; font-size: 0.86rem; font-weight: 500;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.2); border-left: 4px solid var(--gold);
+    transform: translateY(20px); opacity: 0; transition: all 0.3s ease;
+    z-index: 999; pointer-events: none; max-width: calc(100vw - 3rem);
+  }
+  #toast.show { transform: none; opacity: 1; }
+
+  /* RESPONSIVE */
+  @media (max-width: 768px) {
+    header { padding: 0 1rem; gap: 0.9rem; height: 64px; }
+    .header-text h1 { font-size: 0.88rem; }
+    .header-stats { display: none; }
+    #sync-status span:last-child { display: none; }
+    .container { padding: 0.9rem; }
+    .toolbar select { display: none; }
+    .table-wrapper { display: none; }
+    .cards-list { display: flex; }
+    .form-grid { grid-template-columns: 1fr; }
+    #toast { bottom: 0.8rem; right: 0.8rem; left: 0.8rem; }
+  }
+</style>
+</head>
+<body>
+
+<!-- LOADING -->
+<div id="loading-screen">
+  <div class="loading-logo">AAESM</div>
+  <div class="spinner"></div>
+  <div class="loading-text">Chargement de l'annuaire…</div>
+</div>
+
+<header>
+  <div id="logo-container" onclick="document.getElementById('logo-input').click()" title="Changer le logo">
+    <span id="logo-placeholder">AE</span>
+    <span id="logo-hint">✏</span>
+  </div>
+  <input type="file" id="logo-input" accept="image/*">
+  <div class="header-text">
+    <h1>Association des Anciens Élèves de Sainte Marie Grand Lebrun</h1>
+    <p>Annuaire des membres</p>
+  </div>
+  <div class="header-stats">
+    <div id="sync-status">
+      <div id="sync-dot"></div>
+      <span id="sync-text">Connexion…</span>
+    </div>
+    <div class="stat-pill"><span id="stat-total">0</span><span>membres</span></div>
+    <div class="stat-pill"><span id="stat-promos">0</span><span>promotions</span></div>
+  </div>
+</header>
+
+<div class="container">
+
+  <div class="promo-badges-container" id="promo-badges-section" style="display:none">
+    <div class="promo-badges-title">Filtrer par promotion</div>
+    <div id="promo-badges"></div>
+  </div>
+
+  <div class="toolbar">
+    <div class="search-box">
+      <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      <input type="text" id="search" placeholder="Rechercher nom, prénom, email…">
+    </div>
+    <select id="sort-select">
+      <option value="nom">Trier : Nom A→Z</option>
+      <option value="prenom">Trier : Prénom A→Z</option>
+      <option value="promotion">Trier : Promotion (récent)</option>
+      <option value="promotion-asc">Trier : Promotion (ancien)</option>
+    </select>
+    <button class="btn btn-secondary" onclick="openImportModal()">
+      <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      Importer
+    </button>
+    <button class="btn btn-secondary" onclick="exportExcel()">
+      <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      <span id="export-label">Exporter</span>
+    </button>
+    <button class="btn btn-secondary" onclick="loadMembers()" id="btn-refresh" title="Actualiser">
+      <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+      Actualiser
+    </button>
+    <button class="btn btn-secondary" onclick="openEmailModal()">
+      <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+      <span id="email-label">Envoi groupé</span>
+    </button>
+    <button class="btn btn-primary" onclick="openAddModal()">
+      <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Ajouter
+    </button>
+  </div>
+
+  <!-- TABLE desktop -->
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr>
+          <th onclick="sortBy('nom')">Nom <span class="sort-icon" id="sort-nom">▲</span></th>
+          <th onclick="sortBy('prenom')">Prénom <span class="sort-icon" id="sort-prenom">▲</span></th>
+          <th onclick="sortBy('promotion')">Promo <span class="sort-icon" id="sort-promotion">▲</span></th>
+          <th>Email</th>
+          <th>Téléphone</th>
+          <th onclick="sortBy('profession')">Profession <span class="sort-icon" id="sort-profession">▲</span></th>
+          <th onclick="sortBy('statut')">Statut <span class="sort-icon" id="sort-statut">▲</span></th>
+          <th onclick="sortBy('cotisation')">Cotisation <span class="sort-icon" id="sort-cotisation">▲</span></th>
+          <th>Adresse</th>
+          <th style="width:76px;text-align:center">Actions</th>
+        </tr>
+      </thead>
+      <tbody id="table-body"></tbody>
+    </table>
+  </div>
+
+  <!-- CARTES mobile -->
+  <div class="cards-list" id="cards-list"></div>
+
+  <div class="pagination" id="pagination"></div>
+</div>
+
+<!-- MODAL MEMBRE -->
+<div class="overlay hidden" id="member-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="modal-title">Ajouter un membre</h2>
+      <button class="close-btn" onclick="closeModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Nom *</label>
+          <input type="text" id="f-nom" placeholder="DUPONT">
+        </div>
+        <div class="form-group">
+          <label>Prénom *</label>
+          <input type="text" id="f-prenom" placeholder="Jean">
+        </div>
+        <div class="form-group">
+          <label>Année de promotion *</label>
+          <input type="number" id="f-promotion" placeholder="2005" min="1900" max="2099">
+        </div>
+        <div class="form-group">
+          <label>Téléphone</label>
+          <input type="tel" id="f-telephone" placeholder="06 12 34 56 78">
+        </div>
+        <div class="form-group full">
+          <label>Adresse e-mail</label>
+          <input type="email" id="f-email" placeholder="jean.dupont@exemple.fr">
+        </div>
+        <div class="form-group">
+          <label>Profession</label>
+          <input type="text" id="f-profession" placeholder="Ingénieur, Médecin…">
+        </div>
+        <div class="form-group">
+          <label>Statut professionnel</label>
+          <select id="f-statut">
+            <option value="">— Non renseigné —</option>
+            <option value="actif">Actif</option>
+            <option value="retraite">Retraité</option>
+            <option value="decede">Décédé</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Dernière cotisation (année)</label>
+          <input type="number" id="f-cotisation" placeholder="2024" min="1900" max="2099">
+        </div>
+        <div class="form-group full">
+          <label>Adresse postale</label>
+          <textarea id="f-adresse" placeholder="12 rue de la Paix, 75001 Paris"></textarea>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal()">Annuler</button>
+      <button class="btn btn-primary" id="btn-save" onclick="saveMember()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL IMPORT -->
+<div class="overlay hidden" id="import-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>Importer depuis Excel</h2>
+      <button class="close-btn" onclick="closeImportModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:0.85rem;color:var(--slate);margin-bottom:1rem">
+        Importez un fichier <strong>.xlsx</strong> ou <strong>.csv</strong>.<br>
+        Colonnes attendues : <em>nom, prenom, promotion, email, telephone, profession, statut, adresse</em>
+      </p>
+      <div id="import-area" onclick="document.getElementById('import-input').click()">
+        <svg width="36" height="36" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" style="color:var(--gold);margin-bottom:0.5rem;display:block;margin-left:auto;margin-right:auto"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        <p>Glissez votre fichier ici ou <strong>cliquez pour parcourir</strong></p>
+        <p style="font-size:0.76rem;margin-top:0.3rem">Formats : .xlsx, .csv</p>
+      </div>
+      <input type="file" id="import-input" accept=".xlsx,.csv">
+      <div id="import-preview" style="margin-top:0.9rem;font-size:0.84rem;color:#065f46"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeImportModal()">Annuler</button>
+      <button class="btn btn-primary" id="confirm-import" style="display:none" onclick="confirmImport()">Importer</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL ENVOI GROUPÉ -->
+<div class="overlay hidden" id="email-modal">
+  <div class="modal" style="max-width:620px">
+    <div class="modal-header">
+      <h2>Envoi groupé par email</h2>
+      <button class="close-btn" onclick="closeEmailModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <div id="email-summary" style="background:var(--cream);border-radius:8px;padding:0.9rem 1rem;margin-bottom:1.1rem;font-size:0.88rem;color:var(--slate)"></div>
+      <div style="font-size:0.74rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--slate-light);margin-bottom:0.6rem">
+        Lots à envoyer
+      </div>
+      <div id="email-lots" style="display:flex;flex-direction:column;gap:0.6rem"></div>
+      <div style="margin-top:1.1rem;padding:0.8rem 1rem;background:#fdf8ec;border-radius:8px;border-left:3px solid var(--gold);font-size:0.82rem;color:var(--slate)">
+        💡 <strong>Mode d'emploi :</strong> Cliquez dans la zone de texte du lot → <strong>Ctrl+A</strong> pour tout sélectionner → <strong>Ctrl+C</strong> pour copier → ouvrez Zimbra, nouveau message, collez dans le champ <strong>Cci</strong>. Répétez pour chaque lot.
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeEmailModal()">Fermer</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+// ── CONFIG ──
+const API_URL = "https://script.google.com/macros/s/AKfycbyQNbiQvsHkrUQmqcJB113Oo27SgRiIc2M9PyOZJenoOhfUwBUJOb4Qr4oN08BfMGkIUA/exec";
+
+// ── STATE ──
+let members = [];
+let editingId = null;
+let currentSort = 'nom';
+let sortAsc = true;
+let currentPage = 1;
+let filterPromo = null;
+let pendingImport = [];
+const PER_PAGE = 20;
+
+// ── SYNC STATUS ──
+function setSyncStatus(state, text) {
+  const dot = document.getElementById('sync-dot');
+  const txt = document.getElementById('sync-text');
+  dot.className = '';
+  dot.classList.add(state);
+  txt.textContent = text;
+}
+
+// ── API ──
+async function apiGet(params = {}) {
+  const url = new URL(API_URL);
+  Object.entries(params).forEach(([k,v]) => url.searchParams.set(k, v));
+  const res = await fetch(url.toString());
+  return res.json();
+}
+
+async function apiPost(body) {
+  const res = await fetch(API_URL, {
+    method: 'POST',
+    body: JSON.stringify(body)
+  });
+  return res.json();
+}
+
+// ── LOAD ──
+async function loadMembers() {
+  setSyncStatus('loading', 'Chargement…');
+  document.getElementById('btn-refresh').disabled = true;
+  try {
+    const result = await apiGet({ action: 'getAll' });
+    if (result.status === 'ok') {
+      members = result.data || [];
+      render();
+      setSyncStatus('ok', 'Synchronisé');
+      toast(`${members.length} membre(s) chargé(s).`);
+    } else {
+      throw new Error(result.message);
+    }
+  } catch(e) {
+    setSyncStatus('error', 'Erreur de connexion');
+    toast('Impossible de contacter Google Sheets.', true);
+  } finally {
+    document.getElementById('btn-refresh').disabled = false;
+    // Masquer l'écran de chargement initial
+    const ls = document.getElementById('loading-screen');
+    if (!ls.classList.contains('hidden')) ls.classList.add('hidden');
+  }
+}
+
+// ── LOGO ──
+const logoInput = document.getElementById('logo-input');
+if (localStorage.getItem('ae_logo')) showLogo(localStorage.getItem('ae_logo'));
+logoInput.addEventListener('change', e => {
+  const f = e.target.files[0]; if (!f) return;
+  const r = new FileReader();
+  r.onload = ev => { localStorage.setItem('ae_logo', ev.target.result); showLogo(ev.target.result); };
+  r.readAsDataURL(f);
+});
+function showLogo(src) {
+  document.getElementById('logo-placeholder').style.display = 'none';
+  const c = document.getElementById('logo-container');
+  let img = c.querySelector('img');
+  if (!img) { img = document.createElement('img'); c.insertBefore(img, c.firstChild); }
+  img.src = src;
+}
+
+// ── SORT ──
+function sortBy(field) {
+  if (currentSort === field) sortAsc = !sortAsc;
+  else { currentSort = field; sortAsc = field !== 'promotion'; }
+  document.querySelectorAll('th').forEach(t => t.classList.remove('sorted'));
+  const icon = document.getElementById('sort-' + field);
+  if (icon) { icon.textContent = sortAsc ? '▲' : '▼'; icon.closest('th').classList.add('sorted'); }
+  currentPage = 1; render();
+}
+document.getElementById('sort-select').addEventListener('change', e => {
+  const v = e.target.value;
+  if (v === 'promotion-asc') { currentSort = 'promotion'; sortAsc = true; }
+  else { currentSort = v; sortAsc = v !== 'promotion'; }
+  currentPage = 1; render();
+});
+document.getElementById('search').addEventListener('input', () => { currentPage = 1; render(); });
+function setPromoFilter(promo) { filterPromo = filterPromo === promo ? null : promo; currentPage = 1; render(); }
+
+// ── HELPERS ──
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function statutBadge(s) {
+  if (s === 'actif') return '<span class="badge-actif">Actif</span>';
+  if (s === 'retraite') return '<span class="badge-retraite">Retraité</span>';
+  if (s === 'decede') return '<span style="display:inline-block;background:#f3f4f6;color:#6b7280;padding:0.15rem 0.5rem;border-radius:20px;font-size:0.74rem;font-weight:600">Décédé</span>';
+  return '—';
+}
+function cotisationBadge(c) {
+  if (!c) return '<span style="color:var(--slate-light);font-size:0.8rem">—</span>';
+  const annee = parseInt(c);
+  const now   = new Date().getFullYear();
+  if (annee >= now)   return '<span style="display:inline-block;background:#d1fae5;color:#065f46;padding:0.15rem 0.55rem;border-radius:20px;font-size:0.74rem;font-weight:700">' + annee + ' ✓</span>';
+  if (annee >= now-1) return '<span style="display:inline-block;background:#fef9c3;color:#854d0e;padding:0.15rem 0.55rem;border-radius:20px;font-size:0.74rem;font-weight:700">' + annee + ' ⚠</span>';
+  return '<span style="display:inline-block;background:#fee2e2;color:#991b1b;padding:0.15rem 0.55rem;border-radius:20px;font-size:0.74rem;font-weight:700">' + annee + ' ✗</span>';
+}
+function iconEdit(id) {
+  return `<button class="btn-icon edit" onclick="editMember('${id}')" title="Modifier">
+    <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+  </button>`;
+}
+function iconDel(id) {
+  return `<button class="btn-icon del" onclick="deleteMember('${id}')" title="Supprimer">
+    <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+  </button>`;
+}
+function generateId() { return 'id_' + Date.now() + '_' + Math.random().toString(36).substr(2,6); }
+
+// ── FILTER + SORT ──
+function getFiltered() {
+  const q = document.getElementById('search').value.trim().toLowerCase();
+  let data = [...members];
+  if (filterPromo) data = data.filter(m => m.promotion == filterPromo);
+  if (q) data = data.filter(m =>
+    (m.nom||'').toLowerCase().includes(q) || (m.prenom||'').toLowerCase().includes(q) ||
+    (m.email||'').toLowerCase().includes(q) || String(m.promotion||'').includes(q)
+  );
+  data.sort((a, b) => {
+    let va = String(a[currentSort]||'').toLowerCase();
+    let vb = String(b[currentSort]||'').toLowerCase();
+    if (currentSort === 'promotion') { va = parseInt(a.promotion)||0; vb = parseInt(b.promotion)||0; }
+    if (va < vb) return sortAsc ? -1 : 1;
+    if (va > vb) return sortAsc ? 1 : -1;
+    return 0;
+  });
+  return data;
+}
+
+// ── RENDER ──
+function render() {
+  const data = getFiltered();
+  const promos = [...new Set(members.map(m => m.promotion).filter(Boolean))].sort((a,b) => b-a);
+
+  document.getElementById('stat-total').textContent = members.length;
+  document.getElementById('stat-promos').textContent = promos.length;
+
+  const sec = document.getElementById('promo-badges-section');
+  if (promos.length) {
+    sec.style.display = '';
+    document.getElementById('promo-badges').innerHTML =
+      `<span class="promo-badge ${!filterPromo?'active':''}" onclick="setPromoFilter(null)">Toutes</span>` +
+      promos.map(p => `<span class="promo-badge ${filterPromo==p?'active':''}" onclick="setPromoFilter('${p}')">${p}</span>`).join('');
+  } else sec.style.display = 'none';
+
+  const total = data.length;
+  const pages = Math.max(1, Math.ceil(total / PER_PAGE));
+  if (currentPage > pages) currentPage = pages;
+  const start = (currentPage - 1) * PER_PAGE;
+  const slice = data.slice(start, start + PER_PAGE);
+
+  const emptyHTML = `<div class="empty-state">
+    <svg width="44" height="44" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+    <p>${members.length === 0 ? 'Aucun membre. Ajoutez le premier !' : 'Aucun résultat.'}</p>
+  </div>`;
+
+  // TABLE
+  const tbody = document.getElementById('table-body');
+  tbody.innerHTML = !slice.length ? `<tr><td colspan="10">${emptyHTML}</td></tr>` :
+    slice.map(m => `<tr>
+      <td class="name-cell">${esc((m.nom||'').toUpperCase())}</td>
+      <td>${esc(m.prenom)}</td>
+      <td class="promo-cell">${esc(m.promotion)}</td>
+      <td>${m.email?`<a href="mailto:${esc(m.email)}" style="color:var(--gold);text-decoration:none">${esc(m.email)}</a>`:'—'}</td>
+      <td>${m.telephone?`<a href="tel:${esc(m.telephone)}" style="color:inherit;text-decoration:none">${esc(m.telephone)}</a>`:'—'}</td>
+      <td>${esc(m.profession||'—')}</td>
+      <td>${statutBadge(m.statut)}</td>
+      <td>${cotisationBadge(m.cotisation)}</td>
+      <td style="max-width:140px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${esc(m.adresse)}">${esc(m.adresse||'—')}</td>
+      <td style="text-align:center;white-space:nowrap">${iconEdit(m.id)}${iconDel(m.id)}</td>
+    </tr>`).join('');
+
+  // CARTES MOBILE
+  const cardsList = document.getElementById('cards-list');
+  cardsList.innerHTML = !slice.length ? emptyHTML :
+    slice.map(m => `
+      <div class="member-card">
+        <div class="card-top">
+          <div>
+            <div class="card-name">${esc((m.nom||'').toUpperCase())} ${esc(m.prenom)}</div>
+            <div class="card-promo">Promo ${esc(m.promotion||'—')}</div>
+          </div>
+          <div class="card-actions">${iconEdit(m.id)}${iconDel(m.id)}</div>
+        </div>
+        <div class="card-fields">
+          ${m.email?`<div class="card-field full"><span class="lbl">Email</span><a href="mailto:${esc(m.email)}">${esc(m.email)}</a></div>`:''}
+          ${m.telephone?`<div class="card-field"><span class="lbl">Téléphone</span><a href="tel:${esc(m.telephone)}">${esc(m.telephone)}</a></div>`:''}
+          ${m.statut?`<div class="card-field"><span class="lbl">Statut</span>${statutBadge(m.statut)}</div>`:''}
+          <div class="card-field"><span class="lbl">Cotisation</span>${cotisationBadge(m.cotisation)}</div>
+          ${m.profession?`<div class="card-field full"><span class="lbl">Profession</span>${esc(m.profession)}</div>`:''}
+          ${m.adresse?`<div class="card-field full"><span class="lbl">Adresse</span>${esc(m.adresse)}</div>`:''}
+        </div>
+      </div>`).join('');
+
+  // Export label
+  const lbl = document.getElementById('export-label');
+  if (lbl) lbl.textContent = (filterPromo||document.getElementById('search').value.trim()) ? `Exporter (${total})` : 'Exporter';
+
+  // Email label
+  updateEmailLabel();
+
+  // Pagination
+  const pag = document.getElementById('pagination');
+  if (total <= PER_PAGE) { pag.innerHTML = `<span class="page-info">${total} membre${total>1?'s':''}</span>`; return; }
+  let html = `<span class="page-info">${start+1}–${Math.min(start+PER_PAGE,total)} / ${total}</span><div class="page-buttons">`;
+  html += `<button class="page-btn" onclick="goPage(${currentPage-1})" ${currentPage===1?'disabled':''}>‹</button>`;
+  for (let i=1;i<=pages;i++) {
+    if (pages<=7||Math.abs(i-currentPage)<=2||i===1||i===pages)
+      html += `<button class="page-btn ${i===currentPage?'active':''}" onclick="goPage(${i})">${i}</button>`;
+    else if (Math.abs(i-currentPage)===3)
+      html += `<button class="page-btn" disabled>…</button>`;
+  }
+  html += `<button class="page-btn" onclick="goPage(${currentPage+1})" ${currentPage===pages?'disabled':''}>›</button></div>`;
+  pag.innerHTML = html;
+}
+function goPage(p) { currentPage = p; render(); window.scrollTo({top:0,behavior:'smooth'}); }
+
+// ── MODAL MEMBRE ──
+function openAddModal() {
+  editingId = null;
+  document.getElementById('modal-title').textContent = 'Ajouter un membre';
+  ['nom','prenom','promotion','telephone','email','adresse','profession','cotisation'].forEach(f => document.getElementById('f-'+f).value = '');
+  document.getElementById('f-statut').value = '';
+  document.getElementById('member-modal').classList.remove('hidden');
+  setTimeout(() => document.getElementById('f-nom').focus(), 80);
+}
+function editMember(id) {
+  const m = members.find(x => x.id === id); if (!m) return;
+  editingId = id;
+  document.getElementById('modal-title').textContent = 'Modifier le membre';
+  ['nom','prenom','promotion','telephone','email','adresse','profession','cotisation'].forEach(f => document.getElementById('f-'+f).value = m[f]||'');
+  document.getElementById('f-statut').value = m.statut||'';
+  document.getElementById('member-modal').classList.remove('hidden');
+  setTimeout(() => document.getElementById('f-nom').focus(), 80);
+}
+function closeModal() { document.getElementById('member-modal').classList.add('hidden'); editingId = null; }
+
+async function saveMember() {
+  const nom = document.getElementById('f-nom').value.trim();
+  const prenom = document.getElementById('f-prenom').value.trim();
+  const promotion = document.getElementById('f-promotion').value.trim();
+  if (!nom||!prenom||!promotion) { toast('Veuillez renseigner le nom, prénom et la promotion.', true); return; }
+
+  const d = {
+    nom, prenom, promotion,
+    email: document.getElementById('f-email').value.trim(),
+    telephone: document.getElementById('f-telephone').value.trim(),
+    adresse: document.getElementById('f-adresse').value.trim(),
+    profession: document.getElementById('f-profession').value.trim(),
+    statut: document.getElementById('f-statut').value,
+    cotisation: document.getElementById('f-cotisation').value.trim(),
+  };
+
+  const btn = document.getElementById('btn-save');
+  btn.disabled = true; btn.textContent = 'Enregistrement…';
+  setSyncStatus('loading', 'Enregistrement…');
+
+  try {
+    if (editingId) {
+      d.id = editingId;
+      await apiPost({ action: 'update', member: d });
+      const i = members.findIndex(m => m.id === editingId);
+      members[i] = { ...members[i], ...d };
+      toast('Membre mis à jour.');
+    } else {
+      d.id = generateId();
+      await apiPost({ action: 'add', member: d });
+      members.push(d);
+      toast('Membre ajouté.');
+    }
+    setSyncStatus('ok', 'Synchronisé');
+    closeModal(); render();
+  } catch(e) {
+    setSyncStatus('error', 'Erreur');
+    toast('Erreur lors de l\'enregistrement.', true);
+  } finally {
+    btn.disabled = false; btn.textContent = 'Enregistrer';
+  }
+}
+
+async function deleteMember(id) {
+  if (!confirm('Supprimer ce membre définitivement ?')) return;
+  setSyncStatus('loading', 'Suppression…');
+  try {
+    await apiPost({ action: 'delete', id });
+    members = members.filter(m => m.id !== id);
+    render(); toast('Membre supprimé.');
+    setSyncStatus('ok', 'Synchronisé');
+  } catch(e) {
+    setSyncStatus('error', 'Erreur');
+    toast('Erreur lors de la suppression.', true);
+  }
+}
+
+// ── IMPORT ──
+function openImportModal() {
+  document.getElementById('import-modal').classList.remove('hidden');
+  document.getElementById('import-preview').innerHTML = '';
+  document.getElementById('confirm-import').style.display = 'none';
+  document.getElementById('import-input').value = '';
+  pendingImport = [];
+}
+function closeImportModal() { document.getElementById('import-modal').classList.add('hidden'); }
+document.getElementById('import-input').addEventListener('change', e => { if(e.target.files[0]) parseImport(e.target.files[0]); });
+const importArea = document.getElementById('import-area');
+importArea.addEventListener('dragover', e => { e.preventDefault(); importArea.classList.add('drag-over'); });
+importArea.addEventListener('dragleave', () => importArea.classList.remove('drag-over'));
+importArea.addEventListener('drop', e => { e.preventDefault(); importArea.classList.remove('drag-over'); if(e.dataTransfer.files[0]) parseImport(e.dataTransfer.files[0]); });
+
+function parseImport(file) {
+  const ext = file.name.split('.').pop().toLowerCase();
+  const r = new FileReader();
+  if (ext==='csv') { r.onload = ev => parseCSV(ev.target.result); r.readAsText(file,'UTF-8'); }
+  else { r.onload = ev => parseXLSX(ev.target.result); r.readAsArrayBuffer(file); }
+}
+const ALIASES = {
+  nom: ['nom','last name','lastname','surname','name'],
+  prenom: ['prenom','prénom','first name','firstname','given name'],
+  promotion: ['promotion','promo','année','annee','year','graduating year','classe'],
+  email: ['email','mail','e-mail','courriel','adresse mail','adresse email'],
+  telephone: ['telephone','téléphone','tel','phone','mobile','portable'],
+  profession: ['profession','métier','metier','job','occupation','emploi'],
+  statut: ['statut','status','situation','actif - retraité','actif-retraité','actif / retraité','actif/retraité'],
+  cotisation: ['cotisation','cotisations','dernière cotisation','derniere cotisation','année cotisation','annee cotisation'],
+  adresse: ['adresse','address','adresse postale','postal address'],
+};
+function normalizeHeader(h) { return (h||'').replace(/[\r\n\t]+/g,' ').replace(/\s+/g,' ').trim().toLowerCase(); }
+function mapHeaders(headers) {
+  const map = {};
+  headers.forEach((h,i) => {
+    const lh = normalizeHeader(h);
+    for (const [field,aliases] of Object.entries(ALIASES)) {
+      if (aliases.includes(lh)) { map[field]=i; break; }
+    }
+  });
+  return map;
+}
+function normalizeStatut(val) {
+  const v = String(val||'').toLowerCase().trim();
+  if (v.includes('retraité')||v.includes('retraite')) return 'retraite';
+  if (v.includes('décédé')||v.includes('decede')||v.includes('décede')||v.includes('mort')) return 'decede';
+  if (v.includes('actif')) return 'actif';
+  return '';
+}
+function rowsToMembers(rows, headers) {
+  const map = mapHeaders(headers);
+  if (map.nom===undefined||map.prenom===undefined) return null;
+  return rows.map(row => ({
+    id: generateId(),
+    nom: String(row[map.nom]||'').trim(),
+    prenom: String(row[map.prenom]||'').trim(),
+    promotion: String(row[map.promotion]||'').trim(),
+    email: String(row[map.email]||'').trim(),
+    telephone: String(row[map.telephone]||'').trim(),
+    adresse: String(row[map.adresse]||'').replace(/[\r\n]+/g,' ').trim(),
+    profession: String(row[map.profession]||'').replace(/[\r\n]+/g,' ').trim(),
+    statut: normalizeStatut(row[map.statut]),
+    cotisation: String(row[map.cotisation]||'').trim(),
+  })).filter(m => m.nom||m.prenom);
+}
+function parseCSV(text) {
+  const lines = text.split(/\r?\n/).filter(l=>l.trim());
+  const sep = lines[0].includes(';')?';':',';
+  const rows = lines.map(l=>l.split(sep).map(c=>c.replace(/^"|"$/g,'').trim()));
+  showImportPreview(rowsToMembers(rows.slice(1),rows[0]));
+}
+function parseXLSX(buf) {
+  try {
+    const wb = XLSX.read(buf,{type:'array'});
+    const ws = wb.Sheets[wb.SheetNames[0]];
+    const rows = XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+    showImportPreview(rowsToMembers(rows.slice(1),rows[0]));
+  } catch(e) { document.getElementById('import-preview').innerHTML='<span style="color:var(--danger)">Erreur de lecture.</span>'; }
+}
+function showImportPreview(result) {
+  const el = document.getElementById('import-preview');
+  if (!result) { el.innerHTML='<span style="color:var(--danger)">Colonnes "nom" et "prenom" introuvables.</span>'; document.getElementById('confirm-import').style.display='none'; return; }
+  pendingImport = result;
+  el.innerHTML = `✓ <strong>${result.length} membre(s)</strong> prêts à être importés dans Google Sheets.`;
+  document.getElementById('confirm-import').style.display = '';
+}
+
+async function confirmImport() {
+  if (!pendingImport.length) return;
+  const btn = document.getElementById('confirm-import');
+  btn.disabled = true; btn.textContent = 'Import en cours…';
+  setSyncStatus('loading', 'Import…');
+  try {
+    await apiPost({ action: 'importAll', members: pendingImport });
+    members = [...members, ...pendingImport];
+    closeImportModal(); render();
+    toast(`${pendingImport.length} membre(s) importé(s).`);
+    setSyncStatus('ok', 'Synchronisé');
+    pendingImport = [];
+  } catch(e) {
+    setSyncStatus('error', 'Erreur');
+    toast('Erreur lors de l\'import.', true);
+  } finally {
+    btn.disabled = false; btn.textContent = 'Importer';
+  }
+}
+
+// ── EXPORT ──
+function exportExcel() {
+  const data = getFiltered();
+  if (!data.length) { toast('Aucun membre à exporter.', true); return; }
+  const rows = [['Nom','Prénom','Promotion','Email','Téléphone','Profession','Statut','Cotisation','Adresse']];
+  data.forEach(m => rows.push([m.nom||'',m.prenom||'',m.promotion||'',m.email||'',m.telephone||'',m.profession||'',m.statut==='actif'?'Actif':m.statut==='retraite'?'Retraité':m.statut==='decede'?'Décédé':'',m.cotisation||'',m.adresse||'']));
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  ws['!cols'] = [18,16,12,28,16,20,12,12,34].map(w=>({wch:w}));
+  const range = XLSX.utils.decode_range(ws['!ref']);
+  for (let C=range.s.c;C<=range.e.c;C++) {
+    const cell = ws[XLSX.utils.encode_cell({r:0,c:C})];
+    if (cell) cell.s = {font:{bold:true,color:{rgb:'FFFFFF'}},fill:{fgColor:{rgb:'0F1E3C'}},alignment:{horizontal:'center'}};
+  }
+  XLSX.utils.book_append_sheet(wb, ws, 'Membres');
+  const q = document.getElementById('search').value.trim();
+  XLSX.writeFile(wb, `annuaire${filterPromo?'_promo'+filterPromo:''}${q?'_recherche':''}_${new Date().toISOString().slice(0,10)}.xlsx`);
+  toast(`${data.length} membre(s) exporté(s).`);
+}
+
+// ── TOAST ──
+let toastTimer;
+function toast(msg, isErr=false) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.style.borderLeftColor = isErr ? 'var(--danger)' : 'var(--gold)';
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 3500);
+}
+
+// ── KEYBOARD ──
+document.addEventListener('keydown', e => { if(e.key==='Escape'){closeModal();closeImportModal();closeEmailModal();} });
+document.getElementById('member-modal').addEventListener('click', e => { if(e.target===e.currentTarget) closeModal(); });
+document.getElementById('import-modal').addEventListener('click', e => { if(e.target===e.currentTarget) closeImportModal(); });
+document.getElementById('email-modal').addEventListener('click', e => { if(e.target===e.currentTarget) closeEmailModal(); });
+
+// ── ENVOI GROUPÉ ──
+const LOT_SIZE = 99;
+
+function openEmailModal() {
+  document.getElementById('email-modal').classList.remove('hidden');
+  buildEmailLots();
+}
+function closeEmailModal() { document.getElementById('email-modal').classList.add('hidden'); }
+
+function buildEmailLots() {
+  const data   = getFiltered();
+  const emails = data.map(m => (m.email||'').trim()).filter(e => e && e.includes('@'));
+  const unique = [...new Set(emails)];
+  const total  = unique.length;
+  const nbLots = Math.ceil(total / LOT_SIZE);
+
+  const q = document.getElementById('search').value.trim();
+  let context = 'tous les membres';
+  if (filterPromo) context = 'promotion ' + filterPromo;
+  else if (q) context = 'résultats de la recherche "' + q + '"';
+
+  document.getElementById('email-summary').innerHTML =
+    '📧 <strong>' + total + ' adresse' + (total>1?'s':'') + ' email valide' + (total>1?'s':'') + '</strong> trouvée' + (total>1?'s':'') + ' parmi ' + context +
+    (nbLots > 1 ? ' → <strong>' + nbLots + ' lots</strong> de ' + LOT_SIZE + ' max' : '') +
+    (total === 0 ? '<br><span style="color:var(--danger)">Aucun email valide dans la sélection actuelle.</span>' : '');
+
+  const lotsDiv = document.getElementById('email-lots');
+  if (total === 0) { lotsDiv.innerHTML = ''; return; }
+
+  let html = '';
+  for (let i = 0; i < nbLots; i++) {
+    const lotEmails = unique.slice(i * LOT_SIZE, (i+1) * LOT_SIZE);
+    const emailStr  = lotEmails.join('; ');
+    const from = i * LOT_SIZE + 1;
+    const to   = Math.min((i+1) * LOT_SIZE, total);
+    html +=
+      '<div style="background:var(--cream);border-radius:8px;border:1px solid var(--border);padding:0.85rem 1rem;margin-bottom:0.1rem">' +
+        '<div style="font-weight:600;font-size:0.88rem;color:var(--navy);margin-bottom:0.4rem">' +
+          'Lot ' + (i+1) + ' / ' + nbLots +
+          '<span style="font-family:Playfair Display,serif;color:var(--gold);margin-left:0.5rem">' + lotEmails.length + ' destinataires</span>' +
+          '<span style="font-size:0.74rem;color:var(--slate-light);margin-left:0.4rem">(' + from + '–' + to + ')</span>' +
+        '</div>' +
+        '<textarea readonly onclick="this.focus();this.select();" style="width:100%;height:80px;font-size:0.75rem;font-family:monospace;background:white;border:1px solid var(--border);border-radius:6px;padding:0.5rem;color:#4a5568;resize:vertical;display:block;cursor:text">' + emailStr + '</textarea>' +
+        '<div style="font-size:0.72rem;color:var(--slate-light);margin-top:0.3rem">Cliquez dans la zone → <strong>Ctrl+A</strong> pour tout sélectionner → <strong>Ctrl+C</strong> pour copier → collez dans <strong>Cci</strong> de Zimbra</div>' +
+      '</div>';
+  }
+  lotsDiv.innerHTML = html;
+}
+
+// Mettre à jour le label du bouton envoi groupé dans la toolbar
+function updateEmailLabel() {
+  const data = getFiltered();
+  const emails = data.map(m => (m.email||'').trim()).filter(e => e && e.includes('@'));
+  const unique = [...new Set(emails)];
+  const lbl = document.getElementById('email-label');
+  if (lbl) lbl.textContent = unique.length > 0 ? 'Envoi groupé (' + unique.length + ')' : 'Envoi groupé';
+}
+
+// ── INIT ──
+loadMembers();
+</script>
+</body>
+</html>
